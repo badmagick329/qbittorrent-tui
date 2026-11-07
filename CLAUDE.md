@@ -60,7 +60,7 @@ gh pr list
 ### Key Features Implemented
 - ✅ **Responsive layout** - Dynamic column sizing based on terminal width
 - ✅ **Torrent sorting** - Sort by any column with keyboard shortcuts (1-9)
-- ✅ **Configurable columns** - Show/hide 14 available columns via 'C' key
+- ✅ **Configurable columns** - Show/hide 16 available columns via 'C' key
 - ✅ **Advanced filtering** - State, category, tracker, tag, and text search
 - ✅ **Real-time updates** - Configurable refresh interval
 - ✅ **Torrent details** - Drill-down view with Enter key

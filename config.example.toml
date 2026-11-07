@@ -6,3 +6,4 @@ password = "adminpass"
 [ui]
 refresh_interval = 3  # seconds
 # columns = ["name", "size", "progress", "status", "down", "up", "seeds", "peers", "ratio"]  # Default columns to display
+# Optional columns: "uploaded", "eta", "added_on", "completed_on", "category", "tags", "tracker"

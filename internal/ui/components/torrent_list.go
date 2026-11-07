@@ -57,19 +57,20 @@ type ColumnConfig struct {
 var allColumns = []ColumnConfig{
 	{Key: "name", Title: "Name", MinWidth: 20, MaxWidth: 0, FlexGrow: 0.6, Priority: 1},
 	{Key: "size", Title: "Size", MinWidth: 8, MaxWidth: 12, FlexGrow: 0.0, Priority: 3},
-	{Key: "progress", Title: "Progress", MinWidth: 10, MaxWidth: 13, FlexGrow: 0.0, Priority: 2}, // "Progress ↑" = 10 chars
-	{Key: "status", Title: "Status", MinWidth: 8, MaxWidth: 15, FlexGrow: 0.1, Priority: 2},      // "Status ↑" = 8 chars
-	{Key: "down", Title: "Down", MinWidth: 6, MaxWidth: 15, FlexGrow: 0.1, Priority: 3},          // "Down ↑" = 6 chars
-	{Key: "up", Title: "Up", MinWidth: 4, MaxWidth: 15, FlexGrow: 0.1, Priority: 4},              // "Up ↑" = 4 chars
-	{Key: "seeds", Title: "Seeds", MinWidth: 7, MaxWidth: 12, FlexGrow: 0.05, Priority: 4},       // "Seeds ↑" = 7 chars
-	{Key: "peers", Title: "Peers", MinWidth: 7, MaxWidth: 12, FlexGrow: 0.05, Priority: 5},       // "Peers ↑" = 7 chars
-	{Key: "ratio", Title: "Ratio", MinWidth: 7, MaxWidth: 10, FlexGrow: 0.0, Priority: 5},        // "Ratio ↑" = 7 chars
-	{Key: "uploaded", Title: "Uploaded", MinWidth: 10, MaxWidth: 15, FlexGrow: 0.0, Priority: 6}, // "Uploaded ↑" = 10 chars
-	{Key: "eta", Title: "ETA", MinWidth: 5, MaxWidth: 15, FlexGrow: 0.05, Priority: 7},           // "ETA ↑" = 5 chars
-	{Key: "added_on", Title: "Added", MinWidth: 7, MaxWidth: 20, FlexGrow: 0.05, Priority: 8},    // "Added ↑" = 7 chars
-	{Key: "category", Title: "Category", MinWidth: 10, MaxWidth: 20, FlexGrow: 0.1, Priority: 9}, // "Category ↑" = 10 chars
-	{Key: "tags", Title: "Tags", MinWidth: 6, MaxWidth: 25, FlexGrow: 0.1, Priority: 10},         // "Tags ↑" = 6 chars
-	{Key: "tracker", Title: "Tracker", MinWidth: 9, MaxWidth: 25, FlexGrow: 0.1, Priority: 11},   // "Tracker ↑" = 9 chars
+	{Key: "progress", Title: "Progress", MinWidth: 10, MaxWidth: 13, FlexGrow: 0.0, Priority: 2},       // "Progress ↑" = 10 chars
+	{Key: "status", Title: "Status", MinWidth: 8, MaxWidth: 15, FlexGrow: 0.1, Priority: 2},            // "Status ↑" = 8 chars
+	{Key: "down", Title: "Down", MinWidth: 6, MaxWidth: 15, FlexGrow: 0.1, Priority: 3},                // "Down ↑" = 6 chars
+	{Key: "up", Title: "Up", MinWidth: 4, MaxWidth: 15, FlexGrow: 0.1, Priority: 4},                    // "Up ↑" = 4 chars
+	{Key: "seeds", Title: "Seeds", MinWidth: 7, MaxWidth: 12, FlexGrow: 0.05, Priority: 4},             // "Seeds ↑" = 7 chars
+	{Key: "peers", Title: "Peers", MinWidth: 7, MaxWidth: 12, FlexGrow: 0.05, Priority: 5},             // "Peers ↑" = 7 chars
+	{Key: "ratio", Title: "Ratio", MinWidth: 7, MaxWidth: 10, FlexGrow: 0.0, Priority: 5},              // "Ratio ↑" = 7 chars
+	{Key: "uploaded", Title: "Uploaded", MinWidth: 10, MaxWidth: 15, FlexGrow: 0.0, Priority: 6},       // "Uploaded ↑" = 10 chars
+	{Key: "eta", Title: "ETA", MinWidth: 5, MaxWidth: 15, FlexGrow: 0.05, Priority: 7},                 // "ETA ↑" = 5 chars
+	{Key: "added_on", Title: "Added", MinWidth: 7, MaxWidth: 20, FlexGrow: 0.05, Priority: 8},          // "Added ↑" = 7 chars
+	{Key: "completed_on", Title: "Completed", MinWidth: 11, MaxWidth: 20, FlexGrow: 0.05, Priority: 9}, // "Completed ↑" = 11 chars
+	{Key: "category", Title: "Category", MinWidth: 10, MaxWidth: 20, FlexGrow: 0.1, Priority: 10},      // "Category ↑" = 10 chars
+	{Key: "tags", Title: "Tags", MinWidth: 6, MaxWidth: 25, FlexGrow: 0.1, Priority: 11},               // "Tags ↑" = 6 chars
+	{Key: "tracker", Title: "Tracker", MinWidth: 9, MaxWidth: 25, FlexGrow: 0.1, Priority: 12},         // "Tracker ↑" = 9 chars
 }
 
 // Default visible columns
@@ -209,6 +210,12 @@ func (t *TorrentList) Update(msg tea.Msg) (*TorrentList, tea.Cmd) {
 			case "r", "R":
 				// Handle 14th column
 				t.ToggleColumn(13)
+			case "t", "T":
+				// Handle 15th column
+				t.ToggleColumn(14)
+			case "y", "Y":
+				// Handle 16th column
+				t.ToggleColumn(15)
 			}
 			return t, nil
 		}
@@ -233,9 +240,12 @@ func (t *TorrentList) Update(msg tea.Msg) (*TorrentList, tea.Cmd) {
 			if len(msg.String()) == 1 {
 				char := msg.String()[0]
 
-				// Number keys 1-9 for sorting visible columns
-				if char >= '1' && char <= '9' {
+				// Number keys 1-9 and 0 for sorting visible columns
+				if char >= '0' && char <= '9' {
 					index := int(char - '1')
+					if char == '0' {
+						index = 9 // 0 sorts the 10th column
+					}
 					if index < len(t.columns) {
 						t.setSortColumn(t.columns[index].Config.Key, false)
 					}
@@ -398,6 +408,9 @@ func (t *TorrentList) renderTorrent(index int) string {
 			style = lipgloss.NewStyle()
 		case "added_on":
 			content = styles.FormatTime(torrent.AddedOn)
+			style = lipgloss.NewStyle()
+		case "completed_on":
+			content = styles.FormatTime(torrent.CompletedOn)
 			style = lipgloss.NewStyle()
 		case "category":
 			content = styles.TruncateString(torrent.Category, col.Width)
@@ -645,6 +658,15 @@ func (t *TorrentList) applySorting() {
 
 // compareTorrents compares two torrents based on current sort configuration
 func (t *TorrentList) compareTorrents(a, b api.Torrent) bool {
+	// Unfinished torrents have no completion time (qBittorrent reports -1),
+	// so keep them after finished ones in both directions
+	if t.sortConfig.Column == "completed_on" {
+		aDone, bDone := a.CompletedOn > 0, b.CompletedOn > 0
+		if aDone != bDone {
+			return aDone
+		}
+	}
+
 	result := t.compareByColumn(a, b, t.sortConfig.Column)
 
 	// If primary comparison is equal, use secondary sort
@@ -734,6 +756,13 @@ func (t *TorrentList) compareByColumn(a, b api.Torrent, column string) int {
 			return 1
 		}
 		return 0
+	case "completed_on":
+		if a.CompletedOn < b.CompletedOn {
+			return -1
+		} else if a.CompletedOn > b.CompletedOn {
+			return 1
+		}
+		return 0
 	case "eta":
 		if a.ETA < b.ETA {
 			return -1
@@ -784,7 +813,7 @@ func (t *TorrentList) renderWithColumnConfig() string {
 
 	// Instructions
 	content.WriteString(lipgloss.PlaceHorizontal(contentWidth, lipgloss.Center,
-		styles.DimStyle.Render("Toggle column visibility: 1-9, 0, q, w, e, r")))
+		styles.DimStyle.Render("Toggle column visibility: 1-9, 0, q, w, e, r, t, y")))
 	content.WriteString("\n\n")
 
 	// Two-column layout for the column list
@@ -818,8 +847,8 @@ func (t *TorrentList) renderWithColumnConfig() string {
 		} else if i == 9 {
 			num = "0." // Use 0 for 10th item
 		} else {
-			// Use q, w, e, r for columns 11-14 to avoid conflicts
-			extraKeys := []string{"q", "w", "e", "r"}
+			// Use q, w, e, r, t, y for columns 11-16 to avoid conflicts
+			extraKeys := []string{"q", "w", "e", "r", "t", "y"}
 			if i-10 < len(extraKeys) {
 				num = fmt.Sprintf("%s.", extraKeys[i-10])
 			} else {
@@ -862,8 +891,8 @@ func (t *TorrentList) renderWithColumnConfig() string {
 		} else if i == 9 {
 			num = "0."
 		} else {
-			// Use q, w, e, r for columns 11-14 to avoid conflicts
-			extraKeys := []string{"q", "w", "e", "r"}
+			// Use q, w, e, r, t, y for columns 11-16 to avoid conflicts
+			extraKeys := []string{"q", "w", "e", "r", "t", "y"}
 			if i-10 < len(extraKeys) {
 				num = fmt.Sprintf("%s.", extraKeys[i-10])
 			} else {

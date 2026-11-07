@@ -1,9 +1,11 @@
 package components
 
 import (
+	"slices"
 	"strings"
 	"testing"
 
+	tea "charm.land/bubbletea/v2"
 	"github.com/nickvanw/qbittorrent-tui/internal/api"
 )
 
@@ -266,5 +268,112 @@ func TestSelectionClearedOnEmptyList(t *testing.T) {
 	}
 	if torrentList.cursor != 0 {
 		t.Fatalf("expected cursor reset to 0, got %d", torrentList.cursor)
+	}
+}
+
+func TestCompletedOnSorting(t *testing.T) {
+	torrentList := NewTorrentList()
+
+	// qBittorrent reports -1 for torrents that haven't completed
+	torrentList.SetTorrents([]api.Torrent{
+		{Name: "Middle", Size: 100, CompletedOn: 2000},
+		{Name: "Unfinished Small", Size: 100, CompletedOn: -1},
+		{Name: "Oldest", Size: 100, CompletedOn: 1000},
+		{Name: "Unfinished Large", Size: 300, CompletedOn: -1},
+		{Name: "Newest", Size: 100, CompletedOn: 3000},
+	})
+
+	tests := []struct {
+		name     string
+		reverse  bool
+		expected []string
+	}{
+		{
+			name:     "ascending",
+			reverse:  false,
+			expected: []string{"Oldest", "Middle", "Newest", "Unfinished Small", "Unfinished Large"},
+		},
+		{
+			name:     "descending",
+			reverse:  true,
+			expected: []string{"Newest", "Middle", "Oldest", "Unfinished Large", "Unfinished Small"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			torrentList.setSortColumn("completed_on", tt.reverse)
+			for i, name := range tt.expected {
+				if torrentList.torrents[i].Name != name {
+					t.Errorf("position %d: expected %s, got %s", i, name, torrentList.torrents[i].Name)
+				}
+			}
+		})
+	}
+}
+
+func TestZeroKeySortsTenthColumn(t *testing.T) {
+	torrentList := NewTorrentList()
+	torrentList.SetVisibleColumns([]string{
+		"name", "size", "progress", "status", "down", "up", "seeds", "peers", "ratio", "added_on",
+	})
+	torrentList.SetDimensions(300, 20)
+
+	if len(torrentList.columns) != 10 {
+		t.Fatalf("expected 10 columns, got %d", len(torrentList.columns))
+	}
+
+	torrentList.Update(tea.KeyPressMsg{Code: '0', Text: "0"})
+	config := torrentList.GetSortConfig()
+	if config.Column != "added_on" || config.Direction != SortAsc {
+		t.Errorf("expected added_on ascending after 0, got %s %v", config.Column, config.Direction)
+	}
+
+	torrentList.Update(tea.KeyPressMsg{Code: ')', Text: ")"})
+	config = torrentList.GetSortConfig()
+	if config.Column != "added_on" || config.Direction != SortDesc {
+		t.Errorf("expected added_on descending after ), got %s %v", config.Column, config.Direction)
+	}
+}
+
+func TestColumnConfigToggleKeys(t *testing.T) {
+	torrentList := NewTorrentList()
+	torrentList.SetDimensions(300, 20)
+
+	torrentList.Update(tea.KeyPressMsg{Code: 'C', Text: "C"})
+	if !torrentList.IsInConfigMode() {
+		t.Fatal("expected column config overlay to be open")
+	}
+
+	tests := []struct {
+		key    rune
+		column string
+	}{
+		{'w', "added_on"},
+		{'e', "completed_on"},
+		{'r', "category"},
+		{'t', "tags"},
+		{'y', "tracker"},
+	}
+
+	for _, tt := range tests {
+		torrentList.Update(tea.KeyPressMsg{Code: tt.key, Text: string(tt.key)})
+		if !slices.Contains(torrentList.GetVisibleColumns(), tt.column) {
+			t.Errorf("expected %q to show %s", tt.key, tt.column)
+		}
+	}
+}
+
+func TestCompletedOnRendersDashWhenUnfinished(t *testing.T) {
+	torrentList := NewTorrentList()
+	torrentList.SetVisibleColumns([]string{"name", "completed_on"})
+	torrentList.SetDimensions(100, 20)
+	torrentList.SetTorrents([]api.Torrent{
+		{Name: "Alpha", CompletedOn: -1},
+	})
+
+	row := torrentList.renderTorrent(0)
+	if !strings.Contains(row, " - ") {
+		t.Errorf("expected Completed cell to be -, got %q", row)
 	}
 }
