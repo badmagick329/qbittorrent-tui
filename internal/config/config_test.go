@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/spf13/cobra"
@@ -168,6 +169,34 @@ api_key = "qbt_testkeytestkeytestkeytestkey"`,
 			}
 		})
 	}
+}
+
+func TestLoadConfigFromHomeDir(t *testing.T) {
+	viper.Reset()
+
+	homeDir := t.TempDir()
+	if runtime.GOOS == "windows" {
+		// Windows doesn't set HOME; the home directory comes from USERPROFILE
+		t.Setenv("HOME", "")
+		t.Setenv("USERPROFILE", homeDir)
+	} else {
+		t.Setenv("HOME", homeDir)
+	}
+
+	configDir := filepath.Join(homeDir, ".config", "qbt-tui")
+	require.NoError(t, os.MkdirAll(configDir, 0755))
+	configData := `[server]
+url = "http://localhost:8080"`
+	require.NoError(t, os.WriteFile(filepath.Join(configDir, "config.toml"), []byte(configData), 0644))
+
+	// Run from a directory without a config.toml so only the home path can match
+	oldDir, _ := os.Getwd()
+	os.Chdir(t.TempDir())
+	defer os.Chdir(oldDir)
+
+	cfg, err := Load(nil)
+	require.NoError(t, err)
+	assert.Equal(t, "http://localhost:8080", cfg.Server.URL)
 }
 
 func TestConfigValidation(t *testing.T) {
@@ -617,10 +646,13 @@ refresh_interval = 15`,
 			os.Chdir(tmpDir)
 			defer os.Chdir(oldDir)
 
-			// Temporarily set HOME to tmpDir to avoid loading real config
+			// Temporarily set HOME (USERPROFILE on Windows) to tmpDir to avoid loading real config
 			oldHome := os.Getenv("HOME")
 			os.Setenv("HOME", tmpDir)
 			defer os.Setenv("HOME", oldHome)
+			oldUserProfile := os.Getenv("USERPROFILE")
+			os.Setenv("USERPROFILE", tmpDir)
+			defer os.Setenv("USERPROFILE", oldUserProfile)
 
 			// Create temp config file if needed
 			if tt.configData != "" {

@@ -50,7 +50,10 @@ func Load(cmd *cobra.Command) (*Config, error) {
 	viper.SetConfigType("toml")
 
 	viper.AddConfigPath(".")
-	viper.AddConfigPath(filepath.Join(os.Getenv("HOME"), ".config", "qbt-tui"))
+	// os.UserHomeDir uses USERPROFILE on Windows, where HOME is usually unset
+	if homeDir, err := os.UserHomeDir(); err == nil {
+		viper.AddConfigPath(filepath.Join(homeDir, ".config", "qbt-tui"))
+	}
 
 	// Set defaults
 	viper.SetDefault("ui.refresh_interval", 3)
