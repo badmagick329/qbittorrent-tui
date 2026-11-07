@@ -312,27 +312,37 @@ func TestCompletedOnSorting(t *testing.T) {
 	}
 }
 
-func TestZeroKeySortsTenthColumn(t *testing.T) {
+func TestNumberRowSortsColumnsBeyondNinth(t *testing.T) {
 	torrentList := NewTorrentList()
 	torrentList.SetVisibleColumns([]string{
-		"name", "size", "progress", "status", "down", "up", "seeds", "peers", "ratio", "added_on",
+		"name", "size", "progress", "status", "down", "up", "seeds", "peers", "ratio",
+		"added_on", "completed_on", "category",
 	})
 	torrentList.SetDimensions(300, 20)
 
-	if len(torrentList.columns) != 10 {
-		t.Fatalf("expected 10 columns, got %d", len(torrentList.columns))
+	if len(torrentList.columns) != 12 {
+		t.Fatalf("expected 12 columns, got %d", len(torrentList.columns))
 	}
 
-	torrentList.Update(tea.KeyPressMsg{Code: '0', Text: "0"})
-	config := torrentList.GetSortConfig()
-	if config.Column != "added_on" || config.Direction != SortAsc {
-		t.Errorf("expected added_on ascending after 0, got %s %v", config.Column, config.Direction)
+	tests := []struct {
+		key       rune
+		column    string
+		direction SortDir
+	}{
+		{'0', "added_on", SortAsc},
+		{')', "added_on", SortDesc},
+		{'-', "completed_on", SortAsc},
+		{'_', "completed_on", SortDesc},
+		{'=', "category", SortAsc},
+		{'+', "category", SortDesc},
 	}
 
-	torrentList.Update(tea.KeyPressMsg{Code: ')', Text: ")"})
-	config = torrentList.GetSortConfig()
-	if config.Column != "added_on" || config.Direction != SortDesc {
-		t.Errorf("expected added_on descending after ), got %s %v", config.Column, config.Direction)
+	for _, tt := range tests {
+		torrentList.Update(tea.KeyPressMsg{Code: tt.key, Text: string(tt.key)})
+		config := torrentList.GetSortConfig()
+		if config.Column != tt.column || config.Direction != tt.direction {
+			t.Errorf("key %q: expected %s %v, got %s %v", tt.key, tt.column, tt.direction, config.Column, config.Direction)
+		}
 	}
 }
 

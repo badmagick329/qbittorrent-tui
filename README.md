@@ -144,8 +144,8 @@ export QBT_UI_TERMINAL_TITLE_TEMPLATE="qbt [{active_torrents}/{total_torrents}] 
 ### Sorting
 | Key | Action |
 |-----|--------|
-| `1-9`, `0` | Sort by visible column (1st-10th) |
-| `Shift+[1-0]` | Reverse sort direction |
+| `1-9`, `0`, `-`, `=` | Sort by visible column (1st-12th) |
+| `Shift+[1-=]` | Reverse sort direction |
 
 **Note**: Sorting keys dynamically map to visible columns. Press `1` to sort by the first visible column, `2` for the second, etc. The column headers show sort indicators (↑/↓).
 
